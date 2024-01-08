@@ -16,7 +16,8 @@ inline void write(foo,char8_t const* first,char8_t const* last)
 	auto diff{last-first};
 	for(;first!=last;++first)
 		val^=*first;
-	println(fast_io::out(),diff," ",val);
+
+    fast_io::io::println(fast_io::out(),diff," ",val);
 }
 
 struct new_type
