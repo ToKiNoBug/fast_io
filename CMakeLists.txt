@@ -1,11 +1,12 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(fast_io)
+project(fast_io VERSION 1.0 LANGUAGES C CXX)
 
 INSTALL (DIRECTORY ${CMAKE_SOURCE_DIR}/include/ DESTINATION include)
 INSTALL (DIRECTORY ${CMAKE_SOURCE_DIR}/man/ DESTINATION man/man3)
 
 option(BUILD_I18N_DLLS "build i18n runtime dlls" OFF)
+option(BUILD_TESTS "Build fast_io test" ON)
 
 if(BUILD_I18N_DLLS)
 
@@ -98,3 +99,56 @@ else()
 endif()
 
 endif()
+
+add_library(fast_io INTERFACE)
+add_library(fast_io::fast_io ALIAS fast_io)
+target_include_directories(fast_io INTERFACE
+		$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+		$<INSTALL_INTERFACE:include>)
+target_compile_features(fast_io INTERFACE cxx_std_20)
+#if(${MSVC})
+#	target_compile_options(fast_io INTERFACE "/Zc:__cplusplus")
+#endif ()
+
+
+if (BUILD_TESTS)
+	file(GLOB test_dirs LIST_DIRECTORIES true "tests/*")
+	add_custom_target("fast_io-tests-all")
+	#message(STATUS "test_dirs = ${test_dirs}")
+	foreach (dir ${test_dirs})
+		cmake_path(GET dir FILENAME test_type)
+		message("- ${test_type}")
+		file(GLOB test_sources "${dir}/*.cc")
+
+		add_custom_target(${test_type}
+			COMMENT "Empty target to build all test below ${test_type}")
+		add_dependencies("fast_io-tests-all" ${test_type})
+
+		foreach (src_file ${test_sources})
+			#message("  - ${src_file}")
+			cmake_path(GET src_file STEM src_name_stem)
+			set(target_name "${test_type}-${src_name_stem}")
+			message("  - ${target_name}")
+			add_executable(${target_name} ${src_file})
+			target_link_libraries(${target_name} PRIVATE fast_io)
+
+			set_target_properties(${target_name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests/${test_type}")
+
+			add_dependencies(${test_type} ${target_name})
+		endforeach ()
+	endforeach ()
+endif ()
+
+install(TARGETS fast_io
+	EXPORT fast_io-targets)
+install(EXPORT fast_io-targets
+	NAMESPACE fast_io::
+	DESTINATION lib/cmake/fast_io)
+
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file("${CMAKE_BINARY_DIR}/fast_io-config.cmake"
+	VERSION ${PROJECT_VERSION}
+	COMPATIBILITY SameMajorVersion
+	)
+install(FILES "${CMAKE_BINARY_DIR}/fast_io-config.cmake"
+	DESTINATION lib/cmake/fast_io)
