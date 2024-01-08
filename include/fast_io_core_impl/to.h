@@ -472,7 +472,7 @@ template<typename T,typename ...Args>
 	}
 	else
 	{
-static_assert(failed,"either somes args not printable or some type not detectable");
+static_assert(failed,"either some args not printable or some type not detectable");
 		return T();
 	}
 }
